@@ -1,11 +1,11 @@
 import os
 import time
 import glob  # Papkani tozalash uchun qidiruv kutubxonasi
+import requests
 from telebot import TeleBot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from yt_dlp import YoutubeDL
 
-# --- # BOT_TOKEN ni server sozlamalaridan qidiradi
+# --- BOT_TOKEN ni server sozlamalaridan qidiradi
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8934901025:AAFAv-ZCK0XSw0DdBtUuHbnEKU-Ed0Eem9I")
 bot = TeleBot(BOT_TOKEN)
 
@@ -18,7 +18,7 @@ bot_strings = {
         'welcome': "👋 Salom! **ViDore** botiga xush kelibsiz!\n\n📥 Menga YouTube, Instagram yoki TikTok videosining havolasini (link) yuboring, yuklab beraman!",
         'downloading': "⏳ ViDore videoni yuklab olmoqda, iltimos kuting...",
         'success': "✨ Video **ViDore** bot orqali muvaffaqiyatli yuklab olindi!",
-        'error': "❌ Kechirasiz, bu linkdan videoni yuklab bo'lmadi.",
+        'error': "❌ Kechirasiz, bu linkdan videoni yuklab bo'lmadi yoki serverda cheklov bor.",
         'fallback': "⚠️ Iltimos, faqat to'g'ri video havolasini (linkini) yuboring!",
         'size_error': "⚠️ Kechirasiz, video hajmi juda katta ({size} MB).\nTelegram botlar bepul rejimda ko'pi bilan 50 MB gacha fayl yubora oladi."
     },
@@ -26,7 +26,7 @@ bot_strings = {
         'welcome': "👋 Привет! Добро пожаловать в бот **ViDore**!\n\n📥 Отправьте мне ссылку на видео из YouTube, Instagram или TikTok, и я скачаю его для вас!",
         'downloading': "⏳ ViDore скачивает видео, пожалуйста, подождите...",
         'success': "✨ Видео успешно скачано через бот **ViDore**!",
-        'error': "❌ Извините, не удалось скачать видео по этой ссылке.",
+        'error': "❌ Извините, не удалось скачать видео по этой ссылке или сервер заблокирован.",
         'fallback': "⚠️ Пожалуйста, отправьте корректную ссылку на видео!" ,
         'size_error': "⚠️ Извините, размер видео слишком большой ({size} МБ).\nTelegram боты в бесплатном режиме могут отправлять файлы только до 50 МБ."
     },
@@ -34,7 +34,7 @@ bot_strings = {
         'welcome': "👋 Hello! Welcome to **ViDore** bot!\n\n📥 Send me a YouTube, Instagram, or TikTok video link, and I will download it for you!",
         'downloading': "⏳ ViDore is downloading the video, please wait...",
         'success': "✨ Video successfully downloaded via **ViDore** bot!",
-        'error': "❌ Sorry, failed to download video from this link.",
+        'error': "❌ Sorry, failed to download video from this link or server restriction occurred.",
         'fallback': "⚠️ Please send a valid video link!",
         'size_error': "⚠️ Sorry, the video size is too large ({size} MB).\nTelegram bots can only send files up to 50 MB in free mode."
     }
@@ -69,7 +69,7 @@ def handle_lang_selection(call):
     
     bot.edit_message_text(welcome_text, chat_id, call.message.message_id, parse_mode="Markdown")
 
-# Video yuklash qismi (Asosiy funksiya)
+# Video yuklash qismi (Tashqi API orqali Render blokirovkalarini aylanib o'tuvchi variant)
 @bot.message_handler(func=lambda message: message.text.startswith(('http://', 'https://')))
 def download_video_tg(message):
     chat_id = message.chat.id
@@ -87,65 +87,32 @@ def download_video_tg(message):
     lang = user_languages[chat_id]
     status_message = bot.send_message(chat_id, bot_strings[lang]['downloading'])
     
-    # Vaqtinchalik unikal fayl prefiksi
-    file_prefix = f"tg_{chat_id}_{int(time.time())}"
-    file_name = f"{file_prefix}.mp4"
+    # Render IP-blokidan qochish uchun tekin va kuchli yuklovchi API xizmati
+    api_url = f"https://api.vyt-dlp.workers.dev/download?url={url}"
     
-    ydl_opts = {
-        # Eng optimal va Telegram ko'tara oladigan format (ko'pincha mp4)
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': '%(id)s.%(ext)s',
-        
-        # YouTube bepul serverlarni bloklamasligi uchun maxsus parollar va interfeys
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Sec-Fetch-Mode': 'navigate',
-        },
-        
-        # Blokirovkadan qochish uchun qo'shimcha parametrlar
-        'nocheckcertificate': True,
-        'prefer_insecure': True,
-        'geo_bypass': True, # Geografik cheklovlarni chetlab o'tish
-        
-        'ignoreerrors': False, # Xato bo'lsa, logda aynan nima xatoligini ko'rsatishi uchun False qilamiz!
-        'quiet': False          # Render loglarida jarayonni to'liq ko'rish uchun
-    }
     try:
-        # 1. Videoni yuklaymiz
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        # API serveriga so'rov yuboramiz
+        response = requests.get(api_url, timeout=30).json()
+        
+        if response.get("success") and response.get("download_url"):
+            video_url = response["download_url"]
             
-        # 2. Agar tayyor .mp4 fayl ochilgan bo'lsa
-        if os.path.exists(file_name):
-            file_size_mb = os.path.getsize(file_name) / (1024 * 1024)  # MB ga o'giramiz
-            
-            # Telegram cheklovini tekshiramiz (50 MB)
-            if file_size_mb > 50:
-                err_text = bot_strings[lang]['size_error'].format(size=int(file_size_mb))
-                bot.edit_message_text(err_text, chat_id, status_message.message_id)
-            else:
-                # Agar 50 MB dan kichik bo'lsa, foydalanuvchiga yuboramiz
-                with open(file_name, 'rb') as video_file:
-                    bot.send_video(chat_id, video_file, caption=bot_strings[lang]['success'], parse_mode="Markdown")
-                bot.delete_message(chat_id, status_message.message_id)
+            # Videoni o'z serverimizga yuklab o'tirmasdan, Telegram'ga to'g'ridan-to'g'ri havola orqali uzatamiz.
+            # Bu nafaqat tez ishlaydi, balki Render'dagi 50MB disk to'lib qolish xavfini ham yo'qotadi!
+            bot.send_video(
+                chat_id, 
+                video_url, 
+                caption=bot_strings[lang]['success'], 
+                parse_mode="Markdown",
+                reply_to_message_id=message.message_id
+            )
+            bot.delete_message(chat_id, status_message.message_id)
         else:
             bot.edit_message_text(bot_strings[lang]['error'], chat_id, status_message.message_id)
             
     except Exception as e:
-        print(f"Yuklashda xatolik: {e}")
+        print(f"Yuklashda texnik xatolik: {e}")
         bot.edit_message_text(bot_strings[lang]['error'], chat_id, status_message.message_id)
-        
-    finally:
-        # 3. TOZALASH: Har qanday vaqtinchalik faylni o'chirish (*.mp4, *.m4a, *.part)
-        temporary_files = glob.glob(f"{file_prefix}.*")
-        for temp_file in temporary_files:
-            try:
-                os.remove(temp_file)
-                print(f"🗑️ Vaqtinchalik fayl butunlay o'chirildi: {temp_file}")
-            except Exception as clear_error:
-                print(f"O'chirishda xato: {clear_error}")
 
 # Boshqa matnlar kelganda
 @bot.message_handler(func=lambda message: True)
@@ -163,10 +130,8 @@ def text_fallback(message):
     lang = user_languages[chat_id]
     bot.reply_to(message, bot_strings[lang]['fallback'])
 
-# Botni ishga tushirish
-# Botni ishga tushirish (Render.com da uxlab qolmasligi uchun kichik hiyla)
+# Botni ishga tushirish va Render sozlamalari
 if __name__ == "__main__":
-    # Render port so'ragani uchun orqa fonda oddiy port ochib qo'yamiz
     import threading
     from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -174,22 +139,21 @@ if __name__ == "__main__":
         def do_GET(self):
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Bot is running!")
+            self.wfile.write(b"Bot is running successfully!")
 
     def run_dummy_server():
         port = int(os.environ.get("PORT", 10000))
         server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
         server.serve_forever()
 
-    # Veb-serverni alohida potokda yoqamiz
+    # Veb-serverni alohida oqimda yoqamiz (Render o'chib qolmasligi uchun)
     threading.Thread(target=run_dummy_server, daemon=True).start()
 
-    # --- MANA SHU YERDAN O'ZGARISH BOSHLANADI ---
-    print("🤖 Konfliktlar tozalanmoqda...")
+    print("🤖 Konfliktlar (zombi jarayonlar) tozalanmoqda...")
     try:
         bot.delete_webhook(drop_pending_updates=True)
     except Exception as e:
         print(f"Webhook tozalashda xato: {e}")
 
-    print("🤖 Bot muvaffaqiyatli ishga tushdi...")
+    print("🤖 ViDore Bot muvaffaqiyatli ishga tushdi...")
     bot.polling(none_stop=True, interval=0, timeout=20)
