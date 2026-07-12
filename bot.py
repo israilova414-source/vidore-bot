@@ -91,23 +91,21 @@ def download_video_tg(message):
     file_prefix = f"tg_{chat_id}_{int(time.time())}"
     file_name = f"{file_prefix}.mp4"
     
-    # OPTIMAL FORMAT SOZLAMALARI (720p yoki undan past, JS runtime ogohlantirishisiz)
-    # VIDEO HAJMINI ENGI KICHIK VA TELEGRAMGA MOS HOLATGA KELTIRISH (360p/480p format)
     ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    # Скачиваем видео не выше 480p, чтобы обойти блокировки и влезть в лимит 50 МБ
+    'format': 'best[height<=480]/best',
     'outtmpl': 'downloads/%(title)s.%(ext)s',
     'noplaylist': True,
-    # YouTube blokirovkasini aylanib o'tish uchun maxsus sozlamalar:
     'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
+    'ignoreerrors': True,
     'quiet': True,
     'no_warnings': True,
-    'source_address': '0.0.0.0', # IPv6 cheklovlarini chetlab o'tish uchun
+    # Имитируем поведение реального браузера более детально
     'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,video/webm,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Sec-Fetch-Mode': 'navigate',
     }
 }
 
