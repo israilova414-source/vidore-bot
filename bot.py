@@ -94,13 +94,23 @@ def download_video_tg(message):
     # OPTIMAL FORMAT SOZLAMALARI (720p yoki undan past, JS runtime ogohlantirishisiz)
     # VIDEO HAJMINI ENGI KICHIK VA TELEGRAMGA MOS HOLATGA KELTIRISH (360p/480p format)
     ydl_opts = {
-        # Avval 360p yoki 480p li tayyor mp4 qidiradi, topolmasa eng kichik hajmlisini oladi
-        'format': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]/best/worst', 
-        'outtmpl': f"{file_prefix}.%(ext)s",
-        'quiet': True,
-        'javascript_runtimes': 'none'
+    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'outtmpl': 'downloads/%(title)s.%(ext)s',
+    'noplaylist': True,
+    # YouTube blokirovkasini aylanib o'tish uchun maxsus sozlamalar:
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'source_address': '0.0.0.0', # IPv6 cheklovlarini chetlab o'tish uchun
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
     }
-    
+}
+
     try:
         # 1. Videoni yuklaymiz
         with YoutubeDL(ydl_opts) as ydl:
