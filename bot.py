@@ -6,7 +6,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from yt_dlp import YoutubeDL
 
 # --- # BOT_TOKEN ni server sozlamalaridan qidiradi
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "'8934901025:AAHche8mSjOSEprTFqkkJTBfOTmDEftJIXw")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8934901025:AAHceEkeHDQAzzGEuDF9kGfkTFY-BgoBqDs")
 bot = TeleBot(BOT_TOKEN)
 
 # Foydalanuvchilarning tanlagan tilini saqlash uchun lug'at
