@@ -181,5 +181,12 @@ if __name__ == "__main__":
     # Veb-serverni alohida potokda yoqamiz
     threading.Thread(target=run_dummy_server, daemon=True).start()
 
+    # --- MANA SHU YERDAN O'ZGARISH BOSHLANADI ---
+    print("🤖 Konfliktlar tozalanmoqda...")
+    try:
+        bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        print(f"Webhook tozalashda xato: {e}")
+
     print("🤖 Bot muvaffaqiyatli ishga tushdi...")
-    bot.infinity_polling()
+    bot.polling(none_stop=True, interval=0, timeout=20)
