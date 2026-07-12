@@ -92,17 +92,26 @@ def download_video_tg(message):
     file_name = f"{file_prefix}.mp4"
     
     ydl_opts = {
+        # Eng optimal va Telegram ko'tara oladigan format (ko'pincha mp4)
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': '%(id)s.%(ext)s',
+        
+        # YouTube bepul serverlarni bloklamasligi uchun maxsus parollar va interfeys
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
+            'Sec-Fetch-Mode': 'navigate',
         },
-        'ignoreerrors': True,
-        'quiet': True
+        
+        # Blokirovkadan qochish uchun qo'shimcha parametrlar
+        'nocheckcertificate': True,
+        'prefer_insecure': True,
+        'geo_bypass': True, # Geografik cheklovlarni chetlab o'tish
+        
+        'ignoreerrors': False, # Xato bo'lsa, logda aynan nima xatoligini ko'rsatishi uchun False qilamiz!
+        'quiet': False          # Render loglarida jarayonni to'liq ko'rish uchun
     }
-
     try:
         # 1. Videoni yuklaymiz
         with YoutubeDL(ydl_opts) as ydl:
