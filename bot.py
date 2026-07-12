@@ -92,22 +92,16 @@ def download_video_tg(message):
     file_name = f"{file_prefix}.mp4"
     
     ydl_opts = {
-    # Скачиваем видео не выше 480p, чтобы обойти блокировки и влезть в лимит 50 МБ
-    'format': 'best[height<=480]/best',
-    'outtmpl': 'downloads/%(title)s.%(ext)s',
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': True,
-    'quiet': True,
-    'no_warnings': True,
-    # Имитируем поведение реального браузера более детально
-    'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,video/webm,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Sec-Fetch-Mode': 'navigate',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': '%(id)s.%(ext)s',
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+        },
+        'ignoreerrors': True,
+        'quiet': True
     }
-}
 
     try:
         # 1. Videoni yuklaymiz
