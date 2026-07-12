@@ -1,4 +1,6 @@
 pyTelegramBotAPI
+yt-dlp
 requests
-yt-dlp>=2026.07.04
-Flask
+urllib3
+aiohttp
+certifi
